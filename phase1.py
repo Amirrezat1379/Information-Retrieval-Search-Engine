@@ -33,9 +33,6 @@ class Word:
         doc.addPosition(position)
         self.positions.append(doc)
 
-def addAdad(i, content, position):
-    print("kiramo bokhor")
-
 newsList = []
 j = 0
 myList = []
@@ -52,30 +49,24 @@ with open('readme.json', 'r') as js_file:
         newsList.append(js_data)
         for i in js_data:
             content = js_data[i]['content']
-            token_list = word_tokenize(my_normalizer.normalize(content))
+            token_list = word_tokenize(my_normalizer.normalize(content.translate(str.maketrans('', '', punctuations))))
             for token in token_list:
-                exi = 0
-                j += 1
-                for wor in myList:
-                    if (wor.word == token):
-                        wor.addPosition(i, j)
-                        exi = 1
-                        break
-                if exi == 0:
-                    word = Word(token)
-                    word.addPosition(i, j)
-                    myList.append(word)
+                stopWords  =stopwords_list()
+                if token not in stopWords:
+                    exi = 0
+                    j += 1
+                    for wor in myList:
+                        if (wor.word == token):
+                            wor.addPosition(i, j)
+                            exi = 1
+                            break
+                    if exi == 0:
+                        word = Word(token)
+                        word.addPosition(i, j)
+                        myList.append(word)
             j = 0
         
-# myList = estekhrajToken(newsList)
-# print(myList)
-# print(myList)
-# for word in myList:
-#     print(word.word)
-#     print(word.freq)
-#     for pos in word.positions:
-#         print(pos.id)
-with open('readme.txt', 'w') as f:
+with open('file.txt', 'w') as f:
     for word in myList:
         f.write(word.word)
         f.write('\n')
