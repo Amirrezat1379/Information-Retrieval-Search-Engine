@@ -1,5 +1,7 @@
+from genericpath import exists
 import json
 from typing import Dict
+from matplotlib.pyplot import cla
 from parsivar import Normalizer, Tokenizer, FindStems
 from hazm import stopwords_list, word_tokenize
 import string
@@ -7,20 +9,32 @@ import string
 # def estekhrajToken(newsList):
 #     return thisList
 
-class DocumentWord:
-    def __init__(self, documentWord, token):
-        self
-
-class word:
-    def __init__(self, token):
-        self.counter = 0
-        self.token = token
-        self.documentWord = dict()
+class DocPose:
+    def __init__(self, id):
+        self.id = id
+        self.positions = []
     
-    def importWord(self, posotion, documentWord):
-        self.counter += 1
-        if documentWord not in saleh:
-            print(malmal)
+    def addPosition(self, position):
+        self.positions.append(position)
+
+class Word:
+    def __init__(self, word):
+        self.word = word
+        self.freq = 0
+        self.positions = []
+    
+    def addPosition(self, docId, position):
+        self.freq += 1
+        for docu in self.positions:
+            if docId == docu.id:
+                docu.addPosition(position)
+                return
+        doc = DocPose(docId)
+        doc.addPosition(position)
+        self.positions.append(doc)
+
+def addAdad(i, content, position):
+    print("kiramo bokhor")
 
 newsList = []
 j = 0
@@ -32,28 +46,39 @@ mytoken = Tokenizer()
 LINK_REGEX = r"((http|https)\:\/\/)?[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z]){2,6}([ا-یa-zA-Z0-9\.\&\/\?\:@\-_=# ])*"
 punctuations = string.punctuation
 punctuations += ''.join(['،','؛','»','«','؟'])
-with open('IR_data_news_12k.json', 'r') as js_file:
+with open('readme.json', 'r') as js_file:
     for jsonObj in js_file:
         js_data = json.loads(jsonObj)
         newsList.append(js_data)
         for i in js_data:
-            thisList.append(i)
-            tokens = []
-            tok = []
-            # print(i)
             content = js_data[i]['content']
-            # print(content.translate(str.maketrans('', '', punctuations)))
-            token_list = word_tokenize(my_normalizer.normalize(content.translate(str.maketrans('', '', punctuations))))
+            token_list = word_tokenize(my_normalizer.normalize(content))
             for token in token_list:
+                exi = 0
                 j += 1
-                tok.append(token)
-                tok.append(j)
-                tokens.append(tok)
+                for wor in myList:
+                    if (wor.word == token):
+                        wor.addPosition(i, j)
+                        exi = 1
+                        break
+                if exi == 0:
+                    word = Word(token)
+                    word.addPosition(i, j)
+                    myList.append(word)
             j = 0
-            thisList.append(tokens)
-            print(i)
-            print(tokens)
         
 # myList = estekhrajToken(newsList)
-print(thisList[0])
 # print(myList)
+# print(myList)
+# for word in myList:
+#     print(word.word)
+#     print(word.freq)
+#     for pos in word.positions:
+#         print(pos.id)
+with open('readme.txt', 'w') as f:
+    for word in myList:
+        f.write(word.word)
+        f.write('\n')
+        for pos in word.positions:
+            f.write(pos.id)
+            f.write('\n')
