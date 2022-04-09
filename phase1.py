@@ -76,6 +76,7 @@ indexes = listIndex
 notExistance = 0
 voroodis = input()
 quotationMode = 0
+offQutation = 0
 voroodis = mytoken.tokenize_words(voroodis)
 print(voroodis)
 list1 = []
@@ -87,44 +88,66 @@ for voroodi in voroodis:
             notExistance = 1
             continue
         if voroodi[0] == '"':
+            print("bye")
+            voroodi = voroodi[1:len(voroodi)]
             quotationMode = 1
             continue
         if voroodi[len(voroodi) - 1] == '"':
-            quotationMode = 0
+            voroodi = voroodi[0:len(voroodi) - 1]
+            offQutation = 1
             continue
-        # if quotationMode == 1:
         if voroodi == word.word:
-            print(voroodi)
-            if notExistance == 0:
+            if quotationMode == 1:
+                if offQutation == 1:
+                    offQutation = 0
+                    quotationMode = 1
                 list1 = list2
                 list2 = []
                 for pos in word.positions:
                     if j == 0:
-                        list2.append(pos.id)
+                        list2.append(pos)
                     else:
                         for item in list1:
-                            if pos.id == item:
-                                list2.append(pos.id)
+                            if pos.id == item.id:
+                                print(pos.positions)
+                                print("--------------------------")
+                                print(item.positions)
+                                print("==========================")
+                                for index1 in pos.positions:
+                                    for index2 in item.positions:
+                                        if (index1 - 1) == index2:
+                                            list2.append(pos)
             else:
-                list1 = list2
-                list2 = []
-                if j == 0:
+                if notExistance == 0:
+                    list1 = list2
+                    list2 = []
                     for pos in word.positions:
-                        for index in indexes:
-                            if index == pos.id:
-                                indexes.remove(index)
-                        list2 = indexes
+                        if j == 0:
+                            list2.append(pos.id)
+                        else:
+                            for item in list1:
+                                if pos.id == item:
+                                    list2.append(pos.id)
                 else:
-                    for pos in word.positions:
-                        for index in indexes:
-                            if index == pos.id:
-                                indexes.remove(index)
-                    for item in list1:
-                        for index in indexes:
-                            if item == index:
-                                list2.append(item)
-                notExistance = 0
-                indexes = listIndex
+                    list1 = list2
+                    list2 = []
+                    if j == 0:
+                        for pos in word.positions:
+                            for index in indexes:
+                                if index == pos.id:
+                                    indexes.remove(index)
+                            list2 = indexes
+                    else:
+                        for pos in word.positions:
+                            for index in indexes:
+                                if index == pos.id:
+                                    indexes.remove(index)
+                        for item in list1:
+                            for index in indexes:
+                                if item == index:
+                                    list2.append(item)
+                    notExistance = 0
+                    indexes = listIndex
             j += 1
 
-print(list2)
+print(list2[0].id)
