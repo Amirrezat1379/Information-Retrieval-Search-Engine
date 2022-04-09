@@ -75,16 +75,26 @@ j = 0
 indexes = listIndex
 notExistance = 0
 voroodis = input()
+quotationMode = 0
 voroodis = mytoken.tokenize_words(voroodis)
 print(voroodis)
 list1 = []
 list2 = []
 for voroodi in voroodis:
     for word in myList:
-        if voroodi == "not" or voroodi == "Not" or voroodi == "NOT":
+        if voroodi[0] == "!":
+            voroodi = voroodi[1:len(voroodi)]
             notExistance = 1
             continue
+        if voroodi[0] == '"':
+            quotationMode = 1
+            continue
+        if voroodi[len(voroodi) - 1] == '"':
+            quotationMode = 0
+            continue
+        # if quotationMode == 1:
         if voroodi == word.word:
+            print(voroodi)
             if notExistance == 0:
                 list1 = list2
                 list2 = []
