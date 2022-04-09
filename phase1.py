@@ -6,9 +6,6 @@ from parsivar import Normalizer, Tokenizer, FindStems
 from hazm import stopwords_list, word_tokenize
 import string
 
-# def estekhrajToken(newsList):
-#     return thisList
-
 class DocPose:
     def __init__(self, id):
         self.id = id
@@ -40,7 +37,6 @@ thisList = []
 my_normalizer = Normalizer(statistical_space_correction=False)
 myStem = FindStems()
 mytoken = Tokenizer()
-LINK_REGEX = r"((http|https)\:\/\/)?[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z]){2,6}([ا-یa-zA-Z0-9\.\&\/\?\:@\-_=# ])*"
 punctuations = string.punctuation
 punctuations += ''.join(['،','؛','»','«','؟'])
 with open('readme.json', 'r') as js_file:
@@ -66,10 +62,33 @@ with open('readme.json', 'r') as js_file:
                         myList.append(word)
             j = 0
         
-with open('file.txt', 'w') as f:
-    for word in myList:
-        f.write(word.word)
-        f.write('\n')
-        for pos in word.positions:
-            f.write(pos.id)
-            f.write('\n')
+# with open('file.txt', 'w') as f:
+#     for word in myList:
+#         f.write(word.word)
+#         f.write('\n')
+#         for pos in word.positions:
+#             f.write(pos.id)
+#             f.write('\n')
+
+j = 0
+voroodis = input()
+voroodis = mytoken.tokenize_words(voroodis)
+list1 = []
+list2 = []
+for word in myList:
+    for voroodi in voroodis:
+        if voroodi == word.word:
+            list1 = list2
+            list2 = []
+            for pos in word.positions:
+                if j == 0:
+                    list2.append(pos.id)
+                else:
+                    for item in list1:
+                        if pos.id == item:
+                            print(item)
+                            list2.append(pos.id)
+            j += 1
+
+print(voroodis)
+print(list2)
