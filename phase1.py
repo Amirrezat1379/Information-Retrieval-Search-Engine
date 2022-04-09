@@ -33,7 +33,7 @@ class Word:
 newsList = []
 j = 0
 myList = []
-thisList = []
+listIndex = []
 my_normalizer = Normalizer(statistical_space_correction=False)
 myStem = FindStems()
 mytoken = Tokenizer()
@@ -44,6 +44,7 @@ with open('readme.json', 'r') as js_file:
         js_data = json.loads(jsonObj)
         newsList.append(js_data)
         for i in js_data:
+            listIndex.append(i)
             content = js_data[i]['content']
             token_list = word_tokenize(my_normalizer.normalize(content.translate(str.maketrans('', '', punctuations))))
             for token in token_list:
@@ -71,24 +72,49 @@ with open('readme.json', 'r') as js_file:
 #             f.write('\n')
 
 j = 0
+indexes = listIndex
+notExistance = 0
 voroodis = input()
 voroodis = mytoken.tokenize_words(voroodis)
+print(voroodis)
 list1 = []
 list2 = []
-for word in myList:
-    for voroodi in voroodis:
+for voroodi in voroodis:
+    for word in myList:
+        if voroodi == "not" or voroodi == "Not" or voroodi == "NOT":
+            notExistance = 1
+            continue
         if voroodi == word.word:
-            list1 = list2
-            list2 = []
-            for pos in word.positions:
+            if notExistance == 0:
+                list1 = list2
+                list2 = []
+                for pos in word.positions:
+                    if j == 0:
+                        list2.append(pos.id)
+                    else:
+                        for item in list1:
+                            if pos.id == item:
+                                list2.append(pos.id)
+            else:
+                list1 = list2
+                list2 = []
                 if j == 0:
-                    list2.append(pos.id)
+                    for pos in word.positions:
+                        for index in indexes:
+                            if index == pos.id:
+                                indexes.remove(index)
+                        list2 = indexes
                 else:
+                    for pos in word.positions:
+                        for index in indexes:
+                            if index == pos.id:
+                                indexes.remove(index)
                     for item in list1:
-                        if pos.id == item:
-                            print(item)
-                            list2.append(pos.id)
+                        for index in indexes:
+                            if item == index:
+                                list2.append(item)
+                notExistance = 0
+                indexes = listIndex
             j += 1
 
-print(voroodis)
 print(list2)
