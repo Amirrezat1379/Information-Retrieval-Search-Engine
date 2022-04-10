@@ -131,10 +131,6 @@ for voroodi in voroodis:
                     else:
                         for item in list1:
                             if pos.id == item.id:
-                                print(pos.positions)
-                                print("--------------------------")
-                                print(item.positions)
-                                print("==========================")
                                 for index1 in pos.positions:
                                     for index2 in item.positions:
                                         if (index1 - 1) == index2:
@@ -145,31 +141,31 @@ for voroodi in voroodis:
                     list2 = []
                     for pos in word.positions:
                         if j == 0:
-                            list2.append(pos.id)
+                            list2.append(pos)
                         else:
                             for item in list1:
-                                if pos.id == item:
-                                    list2.append(pos.id)
+                                if pos.id == item.id:
+                                    list2.append(pos)
                 else:
                     list1 = list2
                     list2 = []
                     if j == 0:
                         for pos in word.positions:
                             for index in indexes:
-                                if index == pos.id:
+                                if index.id == pos.id:
                                     indexes.remove(index)
                             list2 = indexes
                     else:
                         for pos in word.positions:
                             for index in indexes:
-                                if index == pos.id:
+                                if index.id == pos.id:
                                     indexes.remove(index)
                         for item in list1:
                             for index in indexes:
-                                if item == index:
+                                if item.id == index.id:
                                     list2.append(item)
                     notExistance = 0
                     indexes = listIndex
             j += 1
 
-print(list2)
+print(list2[0].id)
