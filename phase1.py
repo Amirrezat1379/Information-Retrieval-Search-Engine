@@ -13,6 +13,9 @@ class DocPose:
     
     def addPosition(self, position):
         self.positions.append(position)
+    
+    def setPosition(self, position):
+        self.positions = position
 
 class Word:
     def __init__(self, word):
@@ -29,6 +32,21 @@ class Word:
         doc = DocPose(docId)
         doc.addPosition(position)
         self.positions.append(doc)
+    
+    def setFreq(self, freq):
+        self.freq = freq
+    
+    def setPosition(self, position):
+        self.positions.append(position)
+
+def convertToDocPose(docPose):
+    newDoc = DocPose(docPose["id"])
+    positions = []
+    for i in docPose["positions"]:
+        positions.append(int(i))
+    newDoc.setPosition(positions)
+    return newDoc
+
 
 newsList = []
 j = 0
@@ -62,14 +80,18 @@ with open('readme.json', 'r') as js_file:
                         word.addPosition(i, j)
                         myList.append(word)
             j = 0
-        
-# with open('file.txt', 'w') as f:
-#     for word in myList:
-#         f.write(word.word)
-#         f.write('\n')
-#         for pos in word.positions:
-#             f.write(pos.id)
-#             f.write('\n')
+
+with open('test.json', 'w') as f:
+    for list1 in myList:
+        for i in range(len(list1.positions)):
+            list1.positions[i] = list1.positions[i].__dict__
+    json.dump([index.__dict__ for index in myList], f)
+
+
+for list1 in myList:
+    for i in range(len(list1.positions)):
+        list1.positions[i] = convertToDocPose(list1.positions[i])
+        # print(list1.positions[i])
 
 j = 0
 indexes = listIndex
@@ -150,4 +172,4 @@ for voroodi in voroodis:
                     indexes = listIndex
             j += 1
 
-print(list2[0].id)
+print(list2)
