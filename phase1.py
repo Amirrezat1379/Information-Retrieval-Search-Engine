@@ -37,7 +37,7 @@ class Word:
         self.freq = freq
     
     def setPosition(self, position):
-        self.positions.append(position)
+        self.positions = position
 
 def convertToDocPose(docPose):
     newDoc = DocPose(docPose["id"])
@@ -46,6 +46,55 @@ def convertToDocPose(docPose):
         positions.append(int(i))
     newDoc.setPosition(positions)
     return newDoc
+
+def makePositionalIndex(mode):
+    if mode == 1:
+        j = 0
+        with open('readme.json', 'r') as js_file:
+            for jsonObj in js_file:
+                js_data = json.loads(jsonObj)
+                newsList.append(js_data)
+                for i in js_data:
+                    listIndex.append(i)
+                    content = js_data[i]['content']
+                    token_list = word_tokenize(my_normalizer.normalize(content.translate(str.maketrans('', '', punctuations))))
+                    for token in token_list:
+                        stopWords  =stopwords_list()
+                        if token not in stopWords:
+                            exi = 0
+                            j += 1
+                            for wor in myList:
+                                if (wor.word == token):
+                                    wor.addPosition(i, j)
+                                    exi = 1
+                                    break
+                            if exi == 0:
+                                word = Word(token)
+                                word.addPosition(i, j)
+                                myList.append(word)
+                    j = 0
+
+        with open('test.json', 'w') as f:
+            for list1 in myList:
+                for i in range(len(list1.positions)):
+                    list1.positions[i] = list1.positions[i].__dict__
+            json.dump([index.__dict__ for index in myList], f)
+
+
+        for list1 in myList:
+            for i in range(len(list1.positions)):
+                list1.positions[i] = convertToDocPose(list1.positions[i])
+    elif mode == 2:
+        with open('test.json', 'r') as js_file:
+            jsonObj = json.load(js_file)
+            for word in jsonObj:
+                newWord = Word(word["word"])
+                newWord.setFreq(word["freq"])
+                subList = []
+                for pos in word["positions"]:
+                    subList.append(convertToDocPose(pos))
+                newWord.setPosition(subList)
+                myList.append(newWord)
 
 
 newsList = []
@@ -57,40 +106,10 @@ myStem = FindStems()
 mytoken = Tokenizer()
 punctuations = string.punctuation
 punctuations += ''.join(['،','؛','»','«','؟'])
-with open('readme.json', 'r') as js_file:
-    for jsonObj in js_file:
-        js_data = json.loads(jsonObj)
-        newsList.append(js_data)
-        for i in js_data:
-            listIndex.append(i)
-            content = js_data[i]['content']
-            token_list = word_tokenize(my_normalizer.normalize(content.translate(str.maketrans('', '', punctuations))))
-            for token in token_list:
-                stopWords  =stopwords_list()
-                if token not in stopWords:
-                    exi = 0
-                    j += 1
-                    for wor in myList:
-                        if (wor.word == token):
-                            wor.addPosition(i, j)
-                            exi = 1
-                            break
-                    if exi == 0:
-                        word = Word(token)
-                        word.addPosition(i, j)
-                        myList.append(word)
-            j = 0
+makePositionalIndex(2)
+print(myList[1].positions[0].positions)
+print(len(myList))
 
-with open('test.json', 'w') as f:
-    for list1 in myList:
-        for i in range(len(list1.positions)):
-            list1.positions[i] = list1.positions[i].__dict__
-    json.dump([index.__dict__ for index in myList], f)
-
-
-for list1 in myList:
-    for i in range(len(list1.positions)):
-        list1.positions[i] = convertToDocPose(list1.positions[i])
         # print(list1.positions[i])
 
 j = 0
@@ -110,7 +129,6 @@ for voroodi in voroodis:
             notExistance = 1
             continue
         if voroodi[0] == '"':
-            print("bye")
             voroodi = voroodi[1:len(voroodi)]
             quotationMode = 1
             continue
@@ -168,4 +186,4 @@ for voroodi in voroodis:
                     indexes = listIndex
             j += 1
 
-print(list2[0].id)
+print(len(list2))
