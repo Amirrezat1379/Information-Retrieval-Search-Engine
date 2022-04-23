@@ -1,195 +1,144 @@
 from collections import Counter
 import json
+from locale import normalize
+from turtle import position
 from matplotlib.pyplot import cla
-from parsivar import Normalizer, Tokenizer, FindStems
-from hazm import stopwords_list, word_tokenize
+from parsivar import FindStems
+from hazm import *
 import string
 import numpy as np
 
-class DocPose:
-    def __init__(self, id):
-        self.id = id
-        self.positions = []
-    
-    def addPosition(self, position):
-        self.positions.append(position)
-    
-    def setPosition(self, position):
-        self.positions = position
-
-class Word:
-    def __init__(self, word):
-        self.word = word
-        self.freq = 0
-        self.positions = []
-    
-    def addPosition(self, docId, position):
-        self.freq += 1
-        for docu in self.positions:
-            if docId == docu.id:
-                docu.addPosition(position)
-                return
-        doc = DocPose(docId)
-        doc.addPosition(position)
-        self.positions.append(doc)
-    
-    def setFreq(self, freq):
-        self.freq = freq
-    
-    def setPosition(self, position):
-        self.positions = position
-
-def convertToDocPose(docPose):
-    newDoc = DocPose(docPose["id"])
-    listIndex.append(docPose["id"])
-    positions = []
-    for i in docPose["positions"]:
-        positions.append(int(i))
-    newDoc.setPosition(positions)
-    return newDoc
-
-def makePositionalIndex(mode):
-    if mode == 1:
-        j = 0
-        with open('readme.json', 'r') as js_file:
-            for jsonObj in js_file:
-                js_data = json.loads(jsonObj)
-                for i in js_data:
-                    listIndex.append(i)
-                    content = js_data[i]['content']
-                    token_list = word_tokenize(my_normalizer.normalize(content.translate(str.maketrans('', '', punctuations))))
-                    for token in token_list:
+def makePositionalIndex(mode, deleteStopWords=True, stemWords=True):
+    j = 0
+    with open('IR_data_news_12k.json', 'r') as js_file:
+        for jsonObj in js_file:
+            js_data = json.loads(jsonObj)
+            for i in js_data:
+                content = js_data[i]['content']
+                token_list = word_tokenize(my_normalizer.normalize(content.translate(str.maketrans('', '', punctuations))))
+                for position, token in enumerate(token_list):
+                    if deleteStopWords == True:
                         if token not in stopWords:
-                            exi = 0
-                            token = myStem.convert_to_stem(token)
+                            if (stemWords == True):
+                                token = myStem.convert_to_stem(token)
                             j += 1
-                            for wor in myList:
-                                if (wor.word == token):
-                                    wor.addPosition(i, j)
-                                    exi = 1
-                                    break
-                            if exi == 0:
-                                word = Word(token)
-                                word.addPosition(i, j)
-                                myList.append(word)
-                    j = 0
-            js_file.close()
+                            if token in dictionary:
+                                dictionary[token][0] += 1
+                                if i in dictionary[token][1]:
+                                    dictionary[token][1][i].append(position)
+                                else:
+                                    dictionary[token][1][i] = [position]
+                            else:
+                                dictionary[token] = []
+                                dictionary[token].append(1)
+                                dictionary[token].append({})
+                                dictionary[token][1][i] = [position]
+                    else:
+                        if (stemWords == True):
+                            token = myStem.convert_to_stem(token)
+                        j += 1
+                        if token in dictionary:
+                            dictionary[token][0] += 1
+                            if i in dictionary[token][1]:
+                                dictionary[token][1][i].append(position)
+                            else:
+                                dictionary[token][1][i] = [position]
+                        else:
+                            dictionary[token] = []
+                            dictionary[token].append(1)
+                            dictionary[token].append({})
+                            dictionary[token][1][i] = [position]
+                j = 0
+    js_file.close()
 
-        with open('test.json', 'w') as f:
-            for list1 in myList:
-                for i in range(len(list1.positions)):
-                    list1.positions[i] = list1.positions[i].__dict__
-            json.dump([index.__dict__ for index in myList], f)
-            f.close()
-
-
-        for list1 in myList:
-            for i in range(len(list1.positions)):
-                list1.positions[i] = convertToDocPose(list1.positions[i])
-    elif mode == 2:
-        with open('test.json', 'r') as js_file:
-            jsonObj = json.load(js_file)
-            for word in jsonObj:
-                newWord = Word(word["word"])
-                newWord.setFreq(word["freq"])
-                subList = []
-                for pos in word["positions"]:
-                    subList.append(convertToDocPose(pos))
-                newWord.setPosition(subList)
-                myList.append(newWord)
-            js_file.close()
-
-
-newsList = []
-j = 0
-myList = []
-listIndex = []
-my_normalizer = Normalizer(statistical_space_correction=False)
-myStem = FindStems()
-mytoken = Tokenizer()
-punctuations = string.punctuation
-stopWords = stopwords_list()
-punctuations += ''.join(['،','؛','»','«','؟'])
-makePositionalIndex(2)
-print(myList[1].positions[0].positions)
-print(len(myList))
-
-        # print(list1.positions[i])
-
-j = 0
-indexes = listIndex
-notExistance = 0
-voroodis = input()
-quotationMode = 0
-offQutation = 0
-voroodis = mytoken.tokenize_words(voroodis)
-print(voroodis)
-list1 = []
-list2 = []
-for voroodi in voroodis:
-    for word in myList:
+def findQuery(voroodis):
+    print(voroodis)
+    returnList = []
+    returnNotList = []
+    j = 0
+    quotationMode = 0
+    notExistance = 0
+    list1 = {}
+    quotCount = 0
+    for voroodi in voroodis:
         if voroodi == "!":
             notExistance = 1
             continue
-        if voroodi[0] == '"':
-            voroodi = voroodi[1:len(voroodi)]
-            quotationMode = 1
-        if voroodi[len(voroodi) - 1] == '"':
-            voroodi = voroodi[0:len(voroodi) - 1]
-            offQutation = 1
-        if voroodi == word.word:
-            if quotationMode == 1:
-                list2 = list1
-                list1 = []
-                for pos in word.positions:
-                    if j == 0:
-                        list1.append(pos)
-                    else:
-                        for item in list2:
-                            if pos.id == item.id:
-                                for index1 in pos.positions:
-                                    for index2 in item.positions:
-                                        if (index1 - 1) == index2:
-                                            list1.append(pos)
-                # if notExistance == 1:
-                #     for index in list1:
-                #         list1.remove(index)
-                #     notExistance = 0
+        if voroodi == '"':
+            if quotationMode == 0:
+                quotationMode = 1
             else:
-                if notExistance == 0:
-                    for pos in word.positions:
-                        list1.append(pos)
+                quotationMode = 0
+                for item in list(list1.keys()):
+                    returnList.append(item)
+            continue
+        voroodi = my_normalizer.normalize(voroodi)
+        voroodi = myStem.convert_to_stem(voroodi)
+        if voroodi not in dictionary:
+            j = 1
+            continue
+        word = dictionary[voroodi][1]
+        if quotationMode == 1:
+            list2 = list1
+            list1 = {}
+            for pos in word:
+                if quotCount == 0:
+                    list1[pos] = word[pos]
                 else:
-                    if j == 0:
-                        for pos in word.positions:
-                            # print("want to remove")
-                            for index in indexes:
-                                if index == pos.id:
-                                    # print(pos.id)
-                                    indexes.remove(pos)
-                                    break
-                            list1 = indexes
-                    else:
-                        for pos in word.positions:
-                            for index in indexes:
-                                if index == pos.id:
-                                    indexes.remove(pos)
-                        for item in list1:
-                            for index in indexes:
-                                if item.id == index:
-                                    list1.append(item)
-                    notExistance = 0
-                    indexes = listIndex
-            j += 1
+                    for item in list2:
+                        if pos == item:
+                            for index1 in word[pos]:
+                                for index2 in list2[item]:
+                                    if (index1 - 1) == index2:
+                                        if pos in list1:
+                                            list1[pos].append(index1)
+                                        else:
+                                            list1[pos] = [index1]
+            quotCount = 1
+        else:
+            if notExistance == 0:
+                for item in list(word.keys()):
+                    returnList.append(item)
+            else:
+                for item in list(word.keys()):
+                    returnNotList.append(item)
+                notExistance = 0
 
-# print(int(listLen[0]))def sort_doc_id_s(doc_list):
-list1 = [key for key, value in Counter(list1).most_common()]
+    returnNotList = list(dict.fromkeys(returnNotList))
+    if returnList == []:
+        if j == 1:
+            return "پرسمان شما یافت نشد!!!!!!"
+        for i in range(12201):
+            returnList.append(str(i))
+    for item in returnNotList:
+        for index in returnList:
+            if item == index:
+                returnList.remove(index)
+    return returnList
 
-# list2.sort(key=lambda x: len(x.positions), reverse=True)
-for item in list1:
-    with open("IR_data_news_12k.json", "r") as file:
-        jsonFile = json.load(file)
-        print(jsonFile[item.id]["url"])
-        print(jsonFile[item.id]["title"])
-        file.close()
+dictionary = {}
+my_normalizer = Normalizer()
+myStem = FindStems()
+punctuations = string.punctuation
+stopWords = set(stopwords_list())
+punctuations += ''.join(['،','؛','»','«','؟'])
+makePositionalIndex(1)
+print(dictionary["ماجدی"][1]['3'][0])
+voroodis = input()
+voroodis = word_tokenize(voroodis)
+print(voroodis)
+finalList = findQuery(voroodis)
+finalList = [key for key, value in Counter(finalList).most_common()]
+print(finalList)
+# # print(int(listLen[0]))def sort_doc_id_s(doc_list):
+# list1 = [key for key, value in Counter(list1).most_common()]
+# print(len(list1))
+
+# # list2.sort(key=lambda x: len(x.positions), reverse=True)
+# for item in list1:
+#     with open("IR_data_news_12k.json", "r") as file:
+#         jsonFile = json.load(file)
+#         print(jsonFile[item.id]["url"])
+#         print(jsonFile[item.id]["title"])
+#         file.close()
 # print(list2[0].id)
