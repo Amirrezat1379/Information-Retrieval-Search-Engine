@@ -1,15 +1,16 @@
 from collections import Counter
 import json
-from locale import normalize
-from turtle import position
-from matplotlib.pyplot import cla
+import matplotlib.pyplot as plt
 from parsivar import FindStems
 from hazm import *
 import string
 import numpy as np
 
-def makePositionalIndex(mode, deleteStopWords=True, stemWords=True):
-    j = 0
+def makePositionalIndex(deleteStopWords=True, stemWords=True):
+    wordCount = 0
+    tokenCount = 0
+    wordList = []
+    tokenList = []
     with open('IR_data_news_12k.json', 'r') as js_file:
         for jsonObj in js_file:
             js_data = json.loads(jsonObj)
@@ -19,9 +20,9 @@ def makePositionalIndex(mode, deleteStopWords=True, stemWords=True):
                 for position, token in enumerate(token_list):
                     if deleteStopWords == True:
                         if token not in stopWords:
+                            wordCount += 1
                             if (stemWords == True):
                                 token = myStem.convert_to_stem(token)
-                            j += 1
                             if token in dictionary:
                                 dictionary[token][0] += 1
                                 if i in dictionary[token][1]:
@@ -29,14 +30,15 @@ def makePositionalIndex(mode, deleteStopWords=True, stemWords=True):
                                 else:
                                     dictionary[token][1][i] = [position]
                             else:
+                                tokenCount += 1
                                 dictionary[token] = []
                                 dictionary[token].append(1)
                                 dictionary[token].append({})
                                 dictionary[token][1][i] = [position]
                     else:
+                        wordCount += 1
                         if (stemWords == True):
                             token = myStem.convert_to_stem(token)
-                        j += 1
                         if token in dictionary:
                             dictionary[token][0] += 1
                             if i in dictionary[token][1]:
@@ -44,12 +46,16 @@ def makePositionalIndex(mode, deleteStopWords=True, stemWords=True):
                             else:
                                 dictionary[token][1][i] = [position]
                         else:
+                            tokenCount += 1
                             dictionary[token] = []
                             dictionary[token].append(1)
                             dictionary[token].append({})
                             dictionary[token][1][i] = [position]
-                j = 0
+                if i == "500" or i == "1000" or i == "1500" or i == "2000":
+                    wordList.append(np.log10(wordCount))
+                    tokenList.append(np.log10(tokenCount))
     js_file.close()
+    return wordList, tokenList, tokenCount, wordCount
 
 def findQuery(voroodis):
     print(voroodis)
@@ -107,6 +113,7 @@ def findQuery(voroodis):
     returnNotList = list(dict.fromkeys(returnNotList))
     if returnList == []:
         if j == 1:
+            j = 0
             return "پرسمان شما یافت نشد!!!!!!"
         for i in range(12201):
             returnList.append(str(i))
@@ -122,23 +129,43 @@ myStem = FindStems()
 punctuations = string.punctuation
 stopWords = set(stopwords_list())
 punctuations += ''.join(['،','؛','»','«','؟'])
-makePositionalIndex(1)
-print(dictionary["ماجدی"][1]['3'][0])
-voroodis = input()
-voroodis = word_tokenize(voroodis)
-print(voroodis)
-finalList = findQuery(voroodis)
-finalList = [key for key, value in Counter(finalList).most_common()]
-print(finalList)
-# # print(int(listLen[0]))def sort_doc_id_s(doc_list):
-# list1 = [key for key, value in Counter(list1).most_common()]
-# print(len(list1))
-
-# # list2.sort(key=lambda x: len(x.positions), reverse=True)
-# for item in list1:
-#     with open("IR_data_news_12k.json", "r") as file:
-#         jsonFile = json.load(file)
-#         print(jsonFile[item.id]["url"])
-#         print(jsonFile[item.id]["title"])
-#         file.close()
-# print(list2[0].id)
+wordList, tokenList, tokenCount, wordCount = makePositionalIndex()
+print(tokenCount, wordCount)
+plt.plot(tokenList, wordList)
+UP = 0
+DOWN = 0
+for i in range(len(tokenList)):
+    UP += (tokenList[i] - np.mean(tokenList)) * (wordList[i]  - np.mean(wordList))
+    DOWN += (tokenList[i] - np.mean(tokenList)) ** 2
+b1 = UP / DOWN
+b0 = np.mean(wordList) - b1 * np.mean(tokenList)
+plt.plot(tokenList, [b0 + b1 * i for i in tokenList])
+# plt.show()
+freq = []
+lenght = []
+i = 0
+for index in dictionary:
+    i += 1
+    freq.append(np.log10(int(dictionary[index][0])))
+    lenght.append(np.log10(i))
+freq.sort(reverse=True)
+plt.plot(lenght, freq)
+plt.show()
+while(True):
+    print("Enter your query:")
+    voroodis = input()
+    if voroodis == "end":
+        break
+    voroodis = word_tokenize(voroodis)
+    finalList = findQuery(voroodis)
+    finalList = [key for key, value in Counter(finalList).most_common()]
+    i = 0
+    with open('IR_data_news_12k.json', 'r') as file:
+        js_file = json.load(file)
+        for item in finalList:
+            print(item)
+            print(js_file[item]["url"])
+            print(js_file[item]["title"])
+            i += 1
+            if i == 5:
+                break
