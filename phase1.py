@@ -1,5 +1,6 @@
 from collections import Counter
 import json
+from xml.dom.xmlbuilder import DocumentLS
 import matplotlib.pyplot as plt
 from parsivar import FindStems
 from hazm import *
@@ -8,6 +9,9 @@ import numpy as np
 from numpy.linalg import norm
 import arabic_reshaper
 from bidi.algorithm import get_display
+from scipy import spatial
+
+# IR_data_news_12k
 
 def convert(text):
     reshaped_text = arabic_reshaper.reshape(text)
@@ -19,9 +23,11 @@ def makePositionalIndex(deleteStopWords=True, stemWords=True):
     tokenCount = 0
     wordList = []
     tokenList = []
-    with open('readme.json', 'r') as js_file:
+    popop = 0
+    with open('IR_data_news_12k.json', 'r') as js_file:
         for jsonObj in js_file:
             js_data = json.loads(jsonObj)
+            documentLen = len(js_data)
             for i in js_data:
                 content = js_data[i]['content']
                 token_list = word_tokenize(my_normalizer.normalize(content.translate(str.maketrans('', '', punctuations))))
@@ -35,12 +41,12 @@ def makePositionalIndex(deleteStopWords=True, stemWords=True):
                             if token in dictionary:
                                 dictionary[token][0] += 1
                                 if i in dictionary[token][1]:
-                                    dictionary[token][1][i][0] = 1 + np.log10(1 + np.power(10, dictionary[token][1][i][0] - 1))
+                                    dictionary[token][1][i][0] = 1 + np.log10(1 + (np.power(10, dictionary[token][1][i][0] - 1)))
                                     dictionary[token][1][i].append(position)
                                 else:
                                     dictionary[token][1][i] = [1]
                                     dictionary[token][1][i].append(position)
-                                    dictionary[token][2] = np.log10(10 / ((10 / np.power(10, dictionary[token][2])) + 1))
+                                    dictionary[token][2] = np.log10(documentLen / ((documentLen / np.power(10, dictionary[token][2])) + 1))
                             else:
                                 tokenCount += 1
                                 dictionary[token] = []
@@ -48,7 +54,7 @@ def makePositionalIndex(deleteStopWords=True, stemWords=True):
                                 dictionary[token].append({})
                                 dictionary[token][1][i] = [1]
                                 dictionary[token][1][i].append(position)
-                                dictionary[token].append(1)
+                                dictionary[token].append(np.log10(documentLen))
                     else:
                         wordCount += 1
                         if (stemWords == True):
@@ -62,7 +68,7 @@ def makePositionalIndex(deleteStopWords=True, stemWords=True):
                             else:
                                 dictionary[token][1][i] = [1]
                                 dictionary[token][1][i].append(position)
-                                dictionary[token][2] = np.log10(10 / ((10 / np.power(10, dictionary[token][2])) + 1))
+                                dictionary[token][2] = np.log10(documentLen / ((documentLen / np.power(10, dictionary[token][2])) + 1))
                         else:
                             tokenCount += 1
                             dictionary[token] = []
@@ -70,11 +76,12 @@ def makePositionalIndex(deleteStopWords=True, stemWords=True):
                             dictionary[token].append({})
                             dictionary[token][1][i] = [1]
                             dictionary[token][1][i].append(position)
-                            dictionary[token].append(1)
+                            dictionary[token].append(np.log10(documentLen))
                 if i == "500" or i == "1000" or i == "1500" or i == "2000":
                     wordList.append(np.log10(wordCount))
                     tokenList.append(np.log10(tokenCount))
     js_file.close()
+    print(popop)
     return wordList, tokenList, tokenCount, wordCount
 
 def calculateQueryTfIdf(query):
@@ -87,7 +94,7 @@ def calculateQueryTfIdf(query):
         queryTfIdf.append((1 + np.log10(queryDictionary[word])) * dictionary[word][2])
     return queryTfIdf
 
-def calculateDocumentTfIdf(query):
+def calculateDocumentTfIdf(query, championList):
     queryDictionary = {}
     documentTfIdf = {}
     count = []
@@ -98,22 +105,38 @@ def calculateDocumentTfIdf(query):
             count.append(0)
     for word in queryDictionary:
         if i == 0:
-            for document in dictionary[word][1]:
-                documentTfIdf[document] = [dictionary[word][1][document][0] * dictionary[word][2]]
-                documentTfIdf[document].append(0)
+            for document in championList:
+                if document in dictionary[word][1]:
+                    documentTfIdf[document] = [dictionary[word][1][document][0] * dictionary[word][2] / dictionaryLen[int(document)]]
+                else:
+                    documentTfIdf[document] = [0]
+                # documentTfIdf[document].append(0)
         else:
-            for document in dictionary[word][1]:
-                if document in documentTfIdf:
-                    documentTfIdf[document][i] = dictionary[word][1][document][0] * dictionary[word][2]
-            for document in documentTfIdf:
-                documentTfIdf[document].append(0)
+            for document in championList:
+                if document in dictionary[word][1]:
+                    documentTfIdf[document].append(dictionary[word][1][document][0] * dictionary[word][2] / dictionaryLen[int(document)])
+                else:
+                    documentTfIdf[document].append(0)
+
         i += 1
-    for item in documentTfIdf:
-        documentTfIdf[item].remove(documentTfIdf[item][len(documentTfIdf[item]) - 1])
     return documentTfIdf
 
 def calculateCosine(query, document):
+    if len(query) == 1:
+        return document[0]
     return np.dot(query,document)/(norm(query)*norm(document))
+
+def createChampionList(query, k):
+    championList = []
+    for word in query:
+        thisChampion = []
+        for document in dictionary[word][1]:
+            thisChampion.append([document, dictionary[word][1][document][0]])
+        thisChampion.sort(key=lambda x: x[1], reverse=True)
+        for i in range(min(len(thisChampion), k)):
+            championList.append(thisChampion[i][0])
+    championList = [key for key, value in Counter(championList).most_common()]
+    return championList
 
 def findQuery(voroodis):
     print(voroodis)
@@ -210,27 +233,40 @@ print(tokenCount, wordCount)
 # freq.sort(reverse=True)
 # plt.plot(lenght, freq)
 # plt.show()
-totalCosine = []
 while(True):
+    totalCosine = []
     print("Enter your query:")
     voroodis = input()
     if voroodis == "end":
         break
-    voroodis = word_tokenize(voroodis)
+    voroodis = word_tokenize(my_normalizer.normalize(voroodis))
+    newVoroodis = []
+    for voroodi in voroodis:
+        voroodi = myStem.convert_to_stem(voroodi)
+        newVoroodis.append(voroodi)
+    voroodis = newVoroodis
+    championList = createChampionList(voroodis, 10)
     queryTfIdf = calculateQueryTfIdf(voroodis)
-    documentTfIdf = calculateDocumentTfIdf(voroodis)
+    documentTfIdf = calculateDocumentTfIdf(voroodis, championList)
     # finalList = findQuery(voroodis)
     # finalList = [key for key, value in Counter(finalList).most_common()]
     # for item in finalList:
-    print(queryTfIdf)
-    print(documentTfIdf)
+    # print(queryTfIdf)
+    # print(documentTfIdf)
     for document in documentTfIdf:
         thisCosine = []
         thisCosine.append(document)
         thisCosine.append(calculateCosine(queryTfIdf, documentTfIdf[document]))
         totalCosine.append(thisCosine)
     totalCosine.sort(key=lambda x: x[1], reverse=True)
-    print(totalCosine)
+    with open('IR_data_news_12k.json', 'r') as js_file:
+        data = json.load(js_file)
+        # print(data["0"])
+        for i in range(min(5, len(totalCosine))):
+            print(data[totalCosine[i][0]]['url'])
+            print(data[totalCosine[i][0]]['title'])
+    # print(totalCosine)
+    # championList(totalCosine, 10)
     # with open('readme.json', 'r') as file:
     #     js_file = json.load(file)
     #     for item in finalList:
